@@ -220,18 +220,18 @@ static void NetadrToSockadr( netadr_t *a, struct sockaddr *s ) {
 		((struct sockaddr_in *)s)->sin_addr.s_addr = *(int *)&a->ip;
 		((struct sockaddr_in *)s)->sin_port = a->port;
 	}
-	else if( a->type == NA_IP6 ) {
-		((struct sockaddr_in6 *)s)->sin6_family = AF_INET6;
-		((struct sockaddr_in6 *)s)->sin6_addr = * ((struct in6_addr *) &a->ip6);
-		((struct sockaddr_in6 *)s)->sin6_port = a->port;
-		((struct sockaddr_in6 *)s)->sin6_scope_id = a->scope_id;
-	}
-	else if(a->type == NA_MULTICAST6)
-	{
-		((struct sockaddr_in6 *)s)->sin6_family = AF_INET6;
-		((struct sockaddr_in6 *)s)->sin6_addr = curgroup.ipv6mr_multiaddr;
-		((struct sockaddr_in6 *)s)->sin6_port = a->port;
-	}
+//	else if( a->type == NA_IP6 ) {
+//		((struct sockaddr_in6 *)s)->sin6_family = AF_INET6;
+//		((struct sockaddr_in6 *)s)->sin6_addr = * ((struct in6_addr *) &a->ip6);
+//		((struct sockaddr_in6 *)s)->sin6_port = a->port;
+//		((struct sockaddr_in6 *)s)->sin6_scope_id = a->scope_id;
+//	}
+//	else if(a->type == NA_MULTICAST6)
+//	{
+//		((struct sockaddr_in6 *)s)->sin6_family = AF_INET6;
+//		((struct sockaddr_in6 *)s)->sin6_addr = curgroup.ipv6mr_multiaddr;
+//		((struct sockaddr_in6 *)s)->sin6_port = a->port;
+//	}
 }
 
 
@@ -241,13 +241,13 @@ static void SockadrToNetadr( struct sockaddr *s, netadr_t *a ) {
 		*(int *)&a->ip = ((struct sockaddr_in *)s)->sin_addr.s_addr;
 		a->port = ((struct sockaddr_in *)s)->sin_port;
 	}
-	else if(s->sa_family == AF_INET6)
-	{
-		a->type = NA_IP6;
-		memcpy(a->ip6, &((struct sockaddr_in6 *)s)->sin6_addr, sizeof(a->ip6));
-		a->port = ((struct sockaddr_in6 *)s)->sin6_port;
-		a->scope_id = ((struct sockaddr_in6 *)s)->sin6_scope_id;
-	}
+//	else if(s->sa_family == AF_INET6)
+//	{
+//		a->type = NA_IP6;
+//		memcpy(a->ip6, &((struct sockaddr_in6 *)s)->sin6_addr, sizeof(a->ip6));
+//		a->port = ((struct sockaddr_in6 *)s)->sin6_port;
+//		a->scope_id = ((struct sockaddr_in6 *)s)->sin6_scope_id;
+//	}
 }
 
 
@@ -751,16 +751,16 @@ qboolean Sys_IsLANAddress( netadr_t adr ) {
 				
 				addrsize = sizeof(adr.ip);
 			}
-			else
-			{
-				// TODO? should we check the scope_id here?
-
-				compareip = (byte *) &((struct sockaddr_in6 *) &localIP[index].addr)->sin6_addr;
-				comparemask = (byte *) &((struct sockaddr_in6 *) &localIP[index].netmask)->sin6_addr;
-				compareadr = adr.ip6;
-				
-				addrsize = sizeof(adr.ip6);
-			}
+//			else
+//			{
+//				// TODO? should we check the scope_id here?
+//
+//				compareip = (byte *) &((struct sockaddr_in6 *) &localIP[index].addr)->sin6_addr;
+//				comparemask = (byte *) &((struct sockaddr_in6 *) &localIP[index].netmask)->sin6_addr;
+//				compareadr = adr.ip6;
+//				
+//				addrsize = sizeof(adr.ip6);
+//			}
 
 			differed = qfalse;
 			for(run = 0; run < addrsize; run++)
@@ -880,79 +880,79 @@ NET_IP6Socket
 */
 SOCKET NET_IP6Socket( char *net_interface, int port, struct sockaddr_in6 *bindto, int *err ) {
 	SOCKET				newsocket;
-	struct sockaddr_in6	address;
-	ioctlarg_t			_true = 1;
-
-	*err = 0;
-
-	if( net_interface )
-	{
-		// Print the name in brackets if there is a colon:
-		if(Q_CountChar(net_interface, ':'))
-			Com_Printf( "Opening IP6 socket: [%s]:%i\n", net_interface, port );
-		else
-			Com_Printf( "Opening IP6 socket: %s:%i\n", net_interface, port );
-	}
-	else
-		Com_Printf( "Opening IP6 socket: [::]:%i\n", port );
-
-	if( ( newsocket = socket( PF_INET6, SOCK_DGRAM, IPPROTO_UDP ) ) == INVALID_SOCKET ) {
-		*err = socketError;
-		Com_Printf( "WARNING: NET_IP6Socket: socket: %s\n", NET_ErrorString() );
-		return newsocket;
-	}
-
-	// make it non-blocking
-	if( ioctlsocket( newsocket, FIONBIO, &_true ) == SOCKET_ERROR ) {
-		Com_Printf( "WARNING: NET_IP6Socket: ioctl FIONBIO: %s\n", NET_ErrorString() );
-		*err = socketError;
-		closesocket(newsocket);
-		return INVALID_SOCKET;
-	}
-
-#ifdef IPV6_V6ONLY
-	{
-		int i = 1;
-
-		// ipv4 addresses should not be allowed to connect via this socket.
-		if(setsockopt(newsocket, IPPROTO_IPV6, IPV6_V6ONLY, (char *) &i, sizeof(i)) == SOCKET_ERROR)
-		{
-			// win32 systems don't seem to support this anyways.
-			Com_DPrintf("WARNING: NET_IP6Socket: setsockopt IPV6_V6ONLY: %s\n", NET_ErrorString());
-		}
-	}
-#endif
-
-	if( !net_interface || !net_interface[0]) {
-		address.sin6_family = AF_INET6;
-		address.sin6_addr = in6addr_any;
-	}
-	else
-	{
-		if(!Sys_StringToSockaddr( net_interface, (struct sockaddr *)&address, sizeof(address), AF_INET6))
-		{
-			closesocket(newsocket);
-			return INVALID_SOCKET;
-		}
-	}
-
-	if( port == PORT_ANY ) {
-		address.sin6_port = 0;
-	}
-	else {
-		address.sin6_port = htons( (short)port );
-	}
-
-	if( bind( newsocket, (void *)&address, sizeof(address) ) == SOCKET_ERROR ) {
-		Com_Printf( "WARNING: NET_IP6Socket: bind: %s\n", NET_ErrorString() );
-		*err = socketError;
-		closesocket( newsocket );
-		return INVALID_SOCKET;
-	}
-	
-	if(bindto)
-		*bindto = address;
-
+//	struct sockaddr_in6	address;
+//	ioctlarg_t			_true = 1;
+//
+//	*err = 0;
+//
+//	if( net_interface )
+//	{
+//		// Print the name in brackets if there is a colon:
+//		if(Q_CountChar(net_interface, ':'))
+//			Com_Printf( "Opening IP6 socket: [%s]:%i\n", net_interface, port );
+//		else
+//			Com_Printf( "Opening IP6 socket: %s:%i\n", net_interface, port );
+//	}
+//	else
+//		Com_Printf( "Opening IP6 socket: [::]:%i\n", port );
+//
+//	if( ( newsocket = socket( PF_INET6, SOCK_DGRAM, IPPROTO_UDP ) ) == INVALID_SOCKET ) {
+//		*err = socketError;
+//		Com_Printf( "WARNING: NET_IP6Socket: socket: %s\n", NET_ErrorString() );
+//		return newsocket;
+//	}
+//
+//	// make it non-blocking
+//	if( ioctlsocket( newsocket, FIONBIO, &_true ) == SOCKET_ERROR ) {
+//		Com_Printf( "WARNING: NET_IP6Socket: ioctl FIONBIO: %s\n", NET_ErrorString() );
+//		*err = socketError;
+//		closesocket(newsocket);
+//		return INVALID_SOCKET;
+//	}
+//
+//#ifdef IPV6_V6ONLY
+//	{
+//		int i = 1;
+//
+//		// ipv4 addresses should not be allowed to connect via this socket.
+//		if(setsockopt(newsocket, IPPROTO_IPV6, IPV6_V6ONLY, (char *) &i, sizeof(i)) == SOCKET_ERROR)
+//		{
+//			// win32 systems don't seem to support this anyways.
+//			Com_DPrintf("WARNING: NET_IP6Socket: setsockopt IPV6_V6ONLY: %s\n", NET_ErrorString());
+//		}
+//	}
+//#endif
+//
+//	if( !net_interface || !net_interface[0]) {
+//		address.sin6_family = AF_INET6;
+//		address.sin6_addr = in6addr_any;
+//	}
+//	else
+//	{
+//		if(!Sys_StringToSockaddr( net_interface, (struct sockaddr *)&address, sizeof(address), AF_INET6))
+//		{
+//			closesocket(newsocket);
+//			return INVALID_SOCKET;
+//		}
+//	}
+//
+//	if( port == PORT_ANY ) {
+//		address.sin6_port = 0;
+//	}
+//	else {
+//		address.sin6_port = htons( (short)port );
+//	}
+//
+//	if( bind( newsocket, (void *)&address, sizeof(address) ) == SOCKET_ERROR ) {
+//		Com_Printf( "WARNING: NET_IP6Socket: bind: %s\n", NET_ErrorString() );
+//		*err = socketError;
+//		closesocket( newsocket );
+//		return INVALID_SOCKET;
+//	}
+//	
+//	if(bindto)
+//		*bindto = address;
+//
 	return newsocket;
 }
 
@@ -964,30 +964,30 @@ Set the current multicast group
 */
 void NET_SetMulticast6(void)
 {
-	struct sockaddr_in6 addr;
-
-	if(!*net_mcast6addr->string || !Sys_StringToSockaddr(net_mcast6addr->string, (struct sockaddr *) &addr, sizeof(addr), AF_INET6))
-	{
-		Com_Printf("WARNING: NET_JoinMulticast6: Incorrect multicast address given, "
-			   "please set cvar %s to a sane value.\n", net_mcast6addr->name);
-		
-		Cvar_SetValue(net_enabled->name, net_enabled->integer | NET_DISABLEMCAST);
-		
-		return;
-	}
-	
-	memcpy(&curgroup.ipv6mr_multiaddr, &addr.sin6_addr, sizeof(curgroup.ipv6mr_multiaddr));
-
-	if(*net_mcast6iface->string)
-	{
-#ifdef _WIN32
-		curgroup.ipv6mr_interface = net_mcast6iface->integer;
-#else
-		curgroup.ipv6mr_interface = if_nametoindex(net_mcast6iface->string);
-#endif
-	}
-	else
-		curgroup.ipv6mr_interface = 0;
+//	struct sockaddr_in6 addr;
+//
+//	if(!*net_mcast6addr->string || !Sys_StringToSockaddr(net_mcast6addr->string, (struct sockaddr *) &addr, sizeof(addr), AF_INET6))
+//	{
+//		Com_Printf("WARNING: NET_JoinMulticast6: Incorrect multicast address given, "
+//			   "please set cvar %s to a sane value.\n", net_mcast6addr->name);
+//		
+//		Cvar_SetValue(net_enabled->name, net_enabled->integer | NET_DISABLEMCAST);
+//		
+//		return;
+//	}
+//	
+//	memcpy(&curgroup.ipv6mr_multiaddr, &addr.sin6_addr, sizeof(curgroup.ipv6mr_multiaddr));
+//
+//	if(*net_mcast6iface->string)
+//	{
+//#ifdef _WIN32
+//		curgroup.ipv6mr_interface = net_mcast6iface->integer;
+//#else
+//		curgroup.ipv6mr_interface = if_nametoindex(net_mcast6iface->string);
+//#endif
+//	}
+//	else
+//		curgroup.ipv6mr_interface = 0;
 }
 
 /*
@@ -998,65 +998,65 @@ Join an ipv6 multicast group
 */
 void NET_JoinMulticast6(void)
 {
-	int err;
-	
-	if(ip6_socket == INVALID_SOCKET || multicast6_socket != INVALID_SOCKET || (net_enabled->integer & NET_DISABLEMCAST))
-		return;
-	
-	if(IN6_IS_ADDR_MULTICAST(&boundto.sin6_addr) || IN6_IS_ADDR_UNSPECIFIED(&boundto.sin6_addr))
-	{
-		// The way the socket was bound does not prohibit receiving multi-cast packets. So we don't need to open a new one.
-		multicast6_socket = ip6_socket;
-	}
-	else
-	{
-		if((multicast6_socket = NET_IP6Socket(net_mcast6addr->string, ntohs(boundto.sin6_port), NULL, &err)) == INVALID_SOCKET)
-		{
-			// If the OS does not support binding to multicast addresses, like WinXP, at least try with the normal file descriptor.
-			multicast6_socket = ip6_socket;
-		}
-	}
-	
-	if(curgroup.ipv6mr_interface)
-	{
-		if (setsockopt(multicast6_socket, IPPROTO_IPV6, IPV6_MULTICAST_IF,
-					(char *) &curgroup.ipv6mr_interface, sizeof(curgroup.ipv6mr_interface)) < 0)
-		{
-			Com_Printf("NET_JoinMulticast6: Couldn't set scope on multicast socket: %s\n", NET_ErrorString());
-
-			if(multicast6_socket != ip6_socket)
-			{
-				closesocket(multicast6_socket);
-				multicast6_socket = INVALID_SOCKET;
-				return;
-			}
-		}
-	}
-
-	if (setsockopt(multicast6_socket, IPPROTO_IPV6, IPV6_JOIN_GROUP, (char *) &curgroup, sizeof(curgroup)))
-	{
-		Com_Printf("NET_JoinMulticast6: Couldn't join multicast group: %s\n", NET_ErrorString());
-
-		if(multicast6_socket != ip6_socket)
-		{
-			closesocket(multicast6_socket);
-			multicast6_socket = INVALID_SOCKET;
-			return;
-		}
-	}
+//	int err;
+//	
+//	if(ip6_socket == INVALID_SOCKET || multicast6_socket != INVALID_SOCKET || (net_enabled->integer & NET_DISABLEMCAST))
+//		return;
+//	
+//	if(IN6_IS_ADDR_MULTICAST(&boundto.sin6_addr) || IN6_IS_ADDR_UNSPECIFIED(&boundto.sin6_addr))
+//	{
+//		// The way the socket was bound does not prohibit receiving multi-cast packets. So we don't need to open a new one.
+//		multicast6_socket = ip6_socket;
+//	}
+//	else
+//	{
+//		if((multicast6_socket = NET_IP6Socket(net_mcast6addr->string, ntohs(boundto.sin6_port), NULL, &err)) == INVALID_SOCKET)
+//		{
+//			// If the OS does not support binding to multicast addresses, like WinXP, at least try with the normal file descriptor.
+//			multicast6_socket = ip6_socket;
+//		}
+//	}
+//	
+//	if(curgroup.ipv6mr_interface)
+//	{
+//		if (setsockopt(multicast6_socket, IPPROTO_IPV6, IPV6_MULTICAST_IF,
+//					(char *) &curgroup.ipv6mr_interface, sizeof(curgroup.ipv6mr_interface)) < 0)
+//		{
+//			Com_Printf("NET_JoinMulticast6: Couldn't set scope on multicast socket: %s\n", NET_ErrorString());
+//
+//			if(multicast6_socket != ip6_socket)
+//			{
+//				closesocket(multicast6_socket);
+//				multicast6_socket = INVALID_SOCKET;
+//				return;
+//			}
+//		}
+//	}
+//
+//	if (setsockopt(multicast6_socket, IPPROTO_IPV6, IPV6_JOIN_GROUP, (char *) &curgroup, sizeof(curgroup)))
+//	{
+//		Com_Printf("NET_JoinMulticast6: Couldn't join multicast group: %s\n", NET_ErrorString());
+//
+//		if(multicast6_socket != ip6_socket)
+//		{
+//			closesocket(multicast6_socket);
+//			multicast6_socket = INVALID_SOCKET;
+//			return;
+//		}
+//	}
 }
 
 void NET_LeaveMulticast6()
 {
-	if(multicast6_socket != INVALID_SOCKET)
-	{
-		if(multicast6_socket != ip6_socket)
-			closesocket(multicast6_socket);
-		else
-			setsockopt(multicast6_socket, IPPROTO_IPV6, IPV6_LEAVE_GROUP, (char *) &curgroup, sizeof(curgroup));
-
-		multicast6_socket = INVALID_SOCKET;
-	}
+//	if(multicast6_socket != INVALID_SOCKET)
+//	{
+//		if(multicast6_socket != ip6_socket)
+//			closesocket(multicast6_socket);
+//		else
+//			setsockopt(multicast6_socket, IPPROTO_IPV6, IPV6_LEAVE_GROUP, (char *) &curgroup, sizeof(curgroup));
+//
+//		multicast6_socket = INVALID_SOCKET;
+//	}
 }
 
 /*
@@ -1271,25 +1271,25 @@ static void NET_AddLocalAddress(char *ifname, struct sockaddr *addr, struct sock
 #if defined(__linux__) || defined(MACOSX) || defined(__BSD__)
 static void NET_GetLocalAddress(void)
 {
-	struct ifaddrs *ifap, *search;
-
-	numIP = 0;
-
-	if(getifaddrs(&ifap))
-		Com_Printf("NET_GetLocalAddress: Unable to get list of network interfaces: %s\n", NET_ErrorString());
-	else
-	{
-		for(search = ifap; search; search = search->ifa_next)
-		{
-			// Only add interfaces that are up.
-			if(ifap->ifa_flags & IFF_UP)
-				NET_AddLocalAddress(search->ifa_name, search->ifa_addr, search->ifa_netmask);
-		}
-	
-		freeifaddrs(ifap);
-		
-		Sys_ShowIP();
-	}
+//	struct ifaddrs *ifap, *search;
+//
+//	numIP = 0;
+//
+//	if(getifaddrs(&ifap))
+//		Com_Printf("NET_GetLocalAddress: Unable to get list of network interfaces: %s\n", NET_ErrorString());
+//	else
+//	{
+//		for(search = ifap; search; search = search->ifa_next)
+//		{
+//			// Only add interfaces that are up.
+//			if(ifap->ifa_flags & IFF_UP)
+//				NET_AddLocalAddress(search->ifa_name, search->ifa_addr, search->ifa_netmask);
+//		}
+//	
+//		freeifaddrs(ifap);
+//		
+//		Sys_ShowIP();
+//	}
 }
 #else
 static void NET_GetLocalAddress( void ) {
@@ -1322,8 +1322,8 @@ static void NET_GetLocalAddress( void ) {
 		memset(&mask6, 0, sizeof(mask6));
 		mask4.sin_family = AF_INET;
 		memset(&mask4.sin_addr.s_addr, 0xFF, sizeof(mask4.sin_addr.s_addr));
-		mask6.sin6_family = AF_INET6;
-		memset(&mask6.sin6_addr, 0xFF, sizeof(mask6.sin6_addr));
+//		mask6.sin6_family = AF_INET6;
+//		memset(&mask6.sin6_addr, 0xFF, sizeof(mask6.sin6_addr));
 
 		// add all IPs from returned list.
 		for(search = res; search; search = search->ai_next)

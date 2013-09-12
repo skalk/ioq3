@@ -684,30 +684,50 @@ static void Upload32( unsigned *data,
 		{
 			if(r_greyscale->integer)
 			{
+#ifdef VCMODS_OPENGLES
+            assert(r_texturebits->integer != 16 && r_texturebits->integer != 32);
+#else
 				if(r_texturebits->integer == 16)
 					internalFormat = GL_LUMINANCE8;
 				else if(r_texturebits->integer == 32)
 					internalFormat = GL_LUMINANCE16;
 				else
+#endif
 					internalFormat = GL_LUMINANCE;
 			}
 			else
 			{
 				if ( glConfig.textureCompression == TC_S3TC_ARB )
 				{
+#ifdef VCMODS_OPENGLES
+               assert(0);
+#else
 					internalFormat = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
+#endif
 				}
 				else if ( glConfig.textureCompression == TC_S3TC )
 				{
+#ifdef VCMODS_OPENGLES
+               assert(0);
+#else
 					internalFormat = GL_RGB4_S3TC;
+#endif
 				}
 				else if ( r_texturebits->integer == 16 )
 				{
+#ifdef VCMODS_OPENGLES
+               assert(0);
+#else
 					internalFormat = GL_RGB5;
+#endif
 				}
 				else if ( r_texturebits->integer == 32 )
 				{
+#ifdef VCMODS_OPENGLES
+               assert(0);
+#else
 					internalFormat = GL_RGB8;
+#endif
 				}
 				else
 				{
@@ -719,22 +739,34 @@ static void Upload32( unsigned *data,
 		{
 			if(r_greyscale->integer)
 			{
+#ifdef VCMODS_OPENGLES
+            assert(r_texturebits->integer != 16 && r_texturebits->integer != 32);
+#else
 				if(r_texturebits->integer == 16)
 					internalFormat = GL_LUMINANCE8_ALPHA8;
 				else if(r_texturebits->integer == 32)
 					internalFormat = GL_LUMINANCE16_ALPHA16;
 				else
+#endif
 					internalFormat = GL_LUMINANCE_ALPHA;
 			}
 			else
 			{
 				if ( r_texturebits->integer == 16 )
 				{
+#ifdef VCMODS_OPENGLES
+               assert(0);
+#else
 					internalFormat = GL_RGBA4;
+#endif
 				}
 				else if ( r_texturebits->integer == 32 )
 				{
+#ifdef VCMODS_OPENGLES
+               assert(0);
+#else
 					internalFormat = GL_RGBA8;
+#endif
 				}
 				else
 				{
@@ -810,17 +842,21 @@ done:
 
 	if (mipmap)
 	{
+#ifndef VCMODS_OPENGLES
 		if ( textureFilterAnisotropic )
 			qglTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT,
 					(GLint)Com_Clamp( 1, maxAnisotropy, r_ext_max_anisotropy->integer ) );
+#endif
 
 		qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter_min);
 		qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl_filter_max);
 	}
 	else
 	{
+#ifndef VCMODS_OPENGLES
 		if ( textureFilterAnisotropic )
 			qglTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1 );
+#endif
 
 		qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
 		qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
@@ -1193,7 +1229,9 @@ static void R_CreateFogImage( void ) {
 	borderColor[2] = 1.0;
 	borderColor[3] = 1;
 
+#ifndef VCMODS_OPENGLES
 	qglTexParameterfv( GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor );
+#endif
 }
 
 /*

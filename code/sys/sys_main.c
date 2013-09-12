@@ -584,6 +584,11 @@ int main( int argc, char **argv )
 	int   i;
 	char  commandLine[ MAX_STRING_CHARS ] = { 0 };
 
+	printf("ARGUMNETS: \n");
+	for (i=0;i<argc; i++)
+		printf("%s ", argv[i]);
+	printf("\n");
+
 #ifndef DEDICATED
 	// SDL version check
 
