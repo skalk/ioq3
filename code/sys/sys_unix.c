@@ -214,10 +214,10 @@ Sys_Mkdir
 */
 qboolean Sys_Mkdir( const char *path )
 {
-	int result = mkdir( path, 0750 );
-
-	if( result != 0 )
-		return errno == EEXIST;
+//	int result = mkdir( path, 0750 );
+//
+//	if( result != 0 )
+//		return errno == EEXIST;
 
 	return qtrue;
 }
